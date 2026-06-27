@@ -1,0 +1,5 @@
+region,current_P,recommended_P,capacity_gap_closed_total,capacity_gap_closed_cold,upgrade_cost_delta
+Giresun,P=1,P=1,0,0,0.0
+Ordu,P=1,P=2,0,0,0.0
+Rize,P=1,P=1,0,0,0.0
+Trabzon,P=1,P=3,0,0,0.0
