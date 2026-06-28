@@ -6,8 +6,4 @@ env/
 venv/
 .env
 .DS_Store
-*.csv
-!pipeline_outputs/*.csv
-!dataset/*.csv
-!uncleaned_dataset/*.csv
-!eda_outputs/*.csv
+

@@ -29,13 +29,14 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold, cross_val_score
+from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import (
     classification_report,
     confusion_matrix,
     roc_auc_score,
 )
+from sklearn.ensemble import RandomForestClassifier
 try:
     import xgboost as xgb
     _USE_XGB = True
@@ -221,67 +222,86 @@ FEATURE_COLS = [
     "capacity_utilization",
 ]
 
-
-def _make_model():
-    """Return an XGBClassifier or fallback GradientBoostingClassifier."""
-    if _USE_XGB:
-        return xgb.XGBClassifier(**XGB_PARAMS)
-    return _GBC(
-        n_estimators=200, max_depth=4, learning_rate=0.08,
-        subsample=0.85, random_state=RANDOM_SEED,
-    )
-
-
 def train_model(
     features: pd.DataFrame,
 ) -> tuple:
     """
-    Train classifier and compute cross-validation metrics.
+    Train XGBoost and Random Forest classifiers, compute cross-validation metrics,
+    compare them, and return the best model.
 
     Returns:
-        model   – trained classifier
-        metrics – dict with cv_auc, feature_importances, etc.
+        model   – trained best classifier
+        metrics – dict with metrics and feature importances for both models
     """
     available = [c for c in FEATURE_COLS if c in features.columns]
     X = features[available].fillna(0).values
     y = features["is_high_risk"].values
 
-    # Cross-validation
     cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_SEED)
-    model_cv = _make_model()
-    cv_scores = cross_val_score(model_cv, X, y, cv=cv, scoring="roc_auc")
 
-    # Final model on full data
-    model = _make_model()
+    models = {}
     if _USE_XGB:
-        model.fit(X, y, eval_set=[(X, y)], verbose=False)
-        model.save_model(str(MODEL_FILE))
-        importances = dict(zip(available, model.feature_importances_.tolist()))
+        models["XGBoost"] = xgb.XGBClassifier(**XGB_PARAMS)
     else:
+        models["GradientBoosting"] = _GBC(n_estimators=200, max_depth=4, learning_rate=0.08, subsample=0.85, random_state=RANDOM_SEED)
+    
+    models["Random Forest"] = RandomForestClassifier(n_estimators=100, max_depth=4, random_state=RANDOM_SEED, class_weight='balanced', n_jobs=-1)
+
+    scoring = ["accuracy", "precision_weighted", "recall_weighted", "f1_weighted", "roc_auc"]
+    
+    metrics_list = []
+    trained_models = {}
+    importances_dict = {}
+    
+    for name, model in models.items():
+        cv_res = cross_validate(model, X, y, cv=cv, scoring=scoring, return_train_score=False)
         model.fit(X, y)
-        importances = dict(zip(available, model.feature_importances_.tolist()))
+        trained_models[name] = model
+        
+        imp = model.feature_importances_
+        sorted_imp = dict(sorted(zip(available, imp.tolist()), key=lambda x: x[1], reverse=True))
+        importances_dict[name] = sorted_imp
+        
+        metrics_list.append({
+            "model": name,
+            "accuracy": round(float(cv_res["test_accuracy"].mean()), 4),
+            "precision": round(float(cv_res["test_precision_weighted"].mean()), 4),
+            "recall": round(float(cv_res["test_recall_weighted"].mean()), 4),
+            "f1_weighted": round(float(cv_res["test_f1_weighted"].mean()), 4),
+            "roc_auc_mean": round(float(cv_res["test_roc_auc"].mean()), 4),
+            "roc_auc_std": round(float(cv_res["test_roc_auc"].std()), 4),
+        })
 
-    sorted_imp  = dict(sorted(importances.items(), key=lambda x: x[1], reverse=True))
+    df_metrics = pd.DataFrame(metrics_list)
+    df_metrics.to_csv("pipeline_outputs/ml_metrics_comparison.csv", index=False)
+    
+    best_model_name = df_metrics.loc[df_metrics["roc_auc_mean"].idxmax(), "model"]
+    best_model = trained_models[best_model_name]
+    
+    if best_model_name == "XGBoost" and _USE_XGB:
+        best_model.save_model(str(MODEL_FILE))
+    else:
+        # If Random Forest or GradientBoosting is best, we would serialize it using pickle or joblib
+        # For simplicity, we can just save a dummy if we expect XGBoost, but we will use the in-memory returned model.
+        import joblib
+        joblib.dump(best_model, str(MODEL_FILE.with_suffix('.joblib')))
 
-    # In-sample classification report
-    y_pred  = model.predict(X)
-    y_proba = model.predict_proba(X)[:, 1]
+    y_pred = best_model.predict(X)
 
     metrics = {
-        "cv_roc_auc_mean":    round(float(cv_scores.mean()), 4),
-        "cv_roc_auc_std":     round(float(cv_scores.std()), 4),
-        "cv_roc_auc_scores":  [round(s, 4) for s in cv_scores.tolist()],
-        "insample_roc_auc":   round(float(roc_auc_score(y, y_proba)), 4),
-        "feature_importances": sorted_imp,
-        "classification_report": classification_report(y, y_pred, output_dict=True),
-        "confusion_matrix":   confusion_matrix(y, y_pred).tolist(),
-        "n_samples":          len(y),
-        "n_features":         len(available),
-        "feature_cols":       available,
-        "backend":            "xgboost" if _USE_XGB else "sklearn-gbm",
+        "best_model": best_model_name,
+        "importances_dict": importances_dict,
+        "confusion_matrix": confusion_matrix(y, y_pred).tolist(),
+        "n_samples": len(y),
+        "n_features": len(available),
+        "feature_cols": available,
+        "cv_roc_auc_mean": df_metrics.loc[df_metrics["roc_auc_mean"].idxmax(), "roc_auc_mean"],
+        "accuracy": df_metrics.loc[df_metrics["roc_auc_mean"].idxmax(), "accuracy"],
+        "xgb_auc": df_metrics.loc[df_metrics["model"] == "XGBoost", "roc_auc_mean"].values[0] if "XGBoost" in df_metrics["model"].values else 0,
+        "rf_auc": df_metrics.loc[df_metrics["model"] == "Random Forest", "roc_auc_mean"].values[0] if "Random Forest" in df_metrics["model"].values else 0,
     }
 
-    return model, metrics
+    return best_model, metrics
 
 
 def predict(
@@ -345,13 +365,8 @@ def run(
 
 if __name__ == "__main__":
     model, predictions, metrics = run()
-    print("\n=== XGBoost BOTTLENECK PREDICTOR ===")
-    print(f"  CV ROC-AUC:  {metrics.get('cv_roc_auc_mean', 'N/A')} "
-          f"± {metrics.get('cv_roc_auc_std', 'N/A')}")
-    print(f"  In-sample AUC: {metrics.get('insample_roc_auc', 'N/A')}")
-    print("\n  Feature importances:")
-    for feat, imp in metrics.get("feature_importances", {}).items():
-        print(f"    {feat:30s}: {imp:.4f}")
+    print("\n=== ML BOTTLENECK PREDICTOR ===")
+    print(f"  Best Model: {metrics.get('best_model', 'N/A')}")
     print("\n  Predictions (top 10 high-risk routes):")
     top = predictions.nlargest(10, "risk_probability")[
         ["region", "source_zone", "risk_score", "risk_probability", "predicted_high_risk"]

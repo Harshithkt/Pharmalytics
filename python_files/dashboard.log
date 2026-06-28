@@ -1,0 +1,230 @@
+══════════════════════════════════════════════════════════════════════
+  PharmaChain Supply Chain Risk Analytics  |  IEEE Dataport Dataset
+══════════════════════════════════════════════════════════════════════
+  Project root : /Users/harshithkt/Desktop/Dataport-IEEE/Centralization of Pharmaceutical Warehouses An Integrated Simulation and Optimization Approach
+  Dataset      : /Users/harshithkt/Desktop/Dataport-IEEE/Centralization of Pharmaceutical Warehouses An Integrated Simulation and Optimization Approach/dataset
+
+
+──────────────────────────────────────────────────────────────────────
+  Step 1: Data Loading & Validation
+──────────────────────────────────────────────────────────────────────
+DATA QUALITY SUMMARY
+================================================================================
+Workbook: geo
+  Rize: shape=(41, 2), missing=0, duplicates=0, zero_cells=0
+  Ordu: shape=(114, 2), missing=0, duplicates=0, zero_cells=0
+  Giresun: shape=(61, 2), missing=0, duplicates=0, zero_cells=0
+  Trabzon: shape=(102, 2), missing=0, duplicates=0, zero_cells=0
+  P-WH: shape=(3, 2), missing=0, duplicates=0, zero_cells=0
+  S-WH Rize: shape=(9, 2), missing=0, duplicates=0, zero_cells=0
+  S-WH Trabzon: shape=(11, 2), missing=0, duplicates=0, zero_cells=0
+  S-WH Ordu: shape=(11, 2), missing=0, duplicates=0, zero_cells=0
+  S-WH Giresun: shape=(52, 3), missing=107, duplicates=31, zero_cells=0
+Workbook: demand
+  Demand Trabzon: shape=(12, 8), missing=34, duplicates=0, zero_cells=0
+  Demand Rize: shape=(12, 8), missing=44, duplicates=0, zero_cells=0
+  Demand Ordu: shape=(12, 8), missing=34, duplicates=0, zero_cells=0
+  Demand Giresun: shape=(12, 8), missing=44, duplicates=0, zero_cells=0
+  Gercek Data: shape=(6, 11), missing=27, duplicates=0, zero_cells=0
+Workbook: distance
+  Distance Rize: shape=(9, 3), missing=1, duplicates=0, zero_cells=0
+  Distance Trabzon: shape=(9, 5), missing=1, duplicates=0, zero_cells=0
+  Distance Giresun: shape=(9, 3), missing=1, duplicates=0, zero_cells=0
+  Distance Ordu: shape=(9, 5), missing=1, duplicates=0, zero_cells=0
+  Locations: shape=(12, 3), missing=8, duplicates=0, zero_cells=0
+  All Distances: shape=(40, 14), missing=84, duplicates=8, zero_cells=0
+Workbook: cost
+  Cost Trabzon: shape=(11, 5), missing=1, duplicates=0, zero_cells=0
+  Cost Rize: shape=(9, 3), missing=1, duplicates=0, zero_cells=0
+  Cost Giresun: shape=(9, 3), missing=1, duplicates=0, zero_cells=0
+  Cost Ordu: shape=(11, 5), missing=1, duplicates=0, zero_cells=0
+  Locations & Indexes: shape=(17, 14), missing=118, duplicates=0, zero_cells=0
+Workbook: capacity
+  Capacity Rize: shape=(34, 9), missing=76, duplicates=3, zero_cells=0
+  Capacity Trabzon: shape=(34, 11), missing=94, duplicates=3, zero_cells=0
+  Capacity Giresun: shape=(34, 9), missing=76, duplicates=3, zero_cells=0
+  Capacity Ordu: shape=(34, 11), missing=94, duplicates=7, zero_cells=0
+Workbook: time
+  Time Rize: shape=(9, 41), missing=1, duplicates=0, zero_cells=0
+  Time Trabzon: shape=(9, 102), missing=1, duplicates=0, zero_cells=0
+  Time Giresun: shape=(9, 61), missing=1, duplicates=0, zero_cells=0
+  Time Ordu: shape=(9, 116), missing=1, duplicates=0, zero_cells=0
+Workbook: fixed_cost
+  Costs Rize: shape=(2, 3), missing=1, duplicates=0, zero_cells=0
+  Costs Trabzon: shape=(2, 5), missing=1, duplicates=0, zero_cells=0
+  Costs Giresun: shape=(2, 3), missing=1, duplicates=0, zero_cells=0
+  Costs Ordu: shape=(2, 5), missing=1, duplicates=0, zero_cells=0
+Geo outliers (lat/lon outside 39-42):
+  Rize: 0
+  Ordu: 113
+  Giresun: 54
+  Trabzon: 0
+  P-WH: 1
+  S-WH Rize: 0
+  S-WH Trabzon: 0
+  S-WH Ordu: 10
+  S-WH Giresun: 18
+Zero-demand entries:
+  Demand Trabzon: 0
+  Demand Rize: 0
+  Demand Ordu: 0
+  Demand Giresun: 0
+================================================================================
+
+──────────────────────────────────────────────────────────────────────
+  Step 2: Risk Scoring Engine
+──────────────────────────────────────────────────────────────────────
+  Computed risk scores in 0.02s
+  Total routes : 32
+  Critical     : 1
+  High         : 9
+  Low          : 22
+  Mean score   : 42.96
+  Max score    : 78.82
+
+  Regional Risk Scores:
+ region  risk_score risk_label
+Giresun   78.819729   CRITICAL
+   Ordu   34.008160        LOW
+   Rize   56.699820       HIGH
+Trabzon   40.485132        LOW
+  ✓ Saved → pipeline_outputs/risk_region.csv
+  ✓ Saved → pipeline_outputs/risk_granular.csv
+
+──────────────────────────────────────────────────────────────────────
+  Step 3: Monte Carlo Disruption Simulation
+──────────────────────────────────────────────────────────────────────
+  Simulated 2,000 scenarios in 0.02s
+  High shortage risk scenarios : 0
+  Critical shortage risk       : 0
+  Max shortage probability     : 9.2%
+  Most vulnerable region       : Giresun
+  Most vulnerable drug type    : total
+
+  Shortage probabilities (top 10):
+ region drug_type  shortage_probability  expected_shortage
+Giresun     total                0.0915         19262.9764
+   Rize     total                0.0370          3659.5894
+   Ordu     total                0.0000             0.0000
+Trabzon     total                0.0000             0.0000
+Giresun      cold                0.0000             0.0000
+   Ordu      cold                0.0000             0.0000
+   Rize      cold                0.0000             0.0000
+Trabzon      cold                0.0000             0.0000
+Giresun    normal                0.0000             0.0000
+   Ordu    normal                0.0000             0.0000
+
+  Running sensitivity sweep …
+  ✓ Saved → pipeline_outputs/simulation_results.csv
+  ✓ Saved → pipeline_outputs/sensitivity_sweep.csv
+
+──────────────────────────────────────────────────────────────────────
+  Step 4: ML Bottleneck Predictor (XGBoost vs Random Forest)
+──────────────────────────────────────────────────────────────────────
+  Training complete in 1.53s
+  Samples  : 640
+  Features : 6 → ['norm_cost', 'norm_time', 'norm_gap', 'norm_cold', 'distance_mean', 'capacity_utilization']
+
+  5-Fold CV Model Comparison:
+        model  accuracy  precision  recall  f1_weighted  roc_auc_mean  roc_auc_std
+      XGBoost    0.9766     0.9769  0.9766       0.9766        0.9982       0.0020
+Random Forest    0.9375     0.9400  0.9375       0.9374        0.9895       0.0051
+
+  Best Model Selected : XGBoost
+
+  Feature importances (Best Model):
+    capacity_utilization                ██████████ 0.2704
+    norm_cost                           ███████ 0.1927
+    norm_cold                           ██████ 0.1553
+    norm_time                           ██████ 0.1531
+    norm_gap                            █████ 0.1463
+    distance_mean                       ███ 0.0823
+  ✓ Saved → pipeline_outputs/ml_predictions.csv
+
+──────────────────────────────────────────────────────────────────────
+  Step 5: LP Optimization Engine
+──────────────────────────────────────────────────────────────────────
+  Solved in 0.04s
+  Status       : Optimal
+  Total cost   : 39,123,730.20
+  Variables    : 130
+  Constraints  : 60
+  Routes found : 60
+
+  Cost by region:
+    Giresun     : 14,135,949.01
+    Ordu        : 1,641,089.13
+    Rize        : 17,556,051.00
+    Trabzon     : 5,790,641.05
+
+  Cost by drug type:
+    cold                : 408,152.99
+    critical_cold       : 32,381.88
+    normal              : 38,683,195.32
+  ✓ Saved → pipeline_outputs/allocation_results.csv
+
+──────────────────────────────────────────────────────────────────────
+  Step 6: Capacity Planning Optimizer
+──────────────────────────────────────────────────────────────────────
+  Processed 4 regions in 0.33s
+  Total upgrade cost: 0.00
+
+──────────────────────────────────────────────────────────────────────
+  Step 7: Rerouting Recommender
+──────────────────────────────────────────────────────────────────────
+  Processed 0 alternative routes in 0.30s
+  No suboptimal routings found.
+══════════════════════════════════════════════════════════════════════
+  PIPELINE INSIGHT REPORT
+══════════════════════════════════════════════════════════════════════
+
+  ── Risk ──────────────────────────────────────────────
+  Critical bottleneck routes : 1
+  Max risk score             : 78.82
+  Mean risk score            : 42.96
+
+  ── Disruption Simulation ─────────────────────────────
+  High-shortage-risk scenarios  : 0
+  Max shortage probability      : 9.2%
+  Most vulnerable region        : Giresun
+  Worst-case P99 shortage       : 404,596 units
+
+  ── ML Model ──────────────────────────────────────────
+  Best Model Selected: XGBoost
+  Top feature        : capacity_utilization
+
+  ── LP Optimizer ──────────────────────────────────────
+  Status         : Optimal
+  Min total cost : 39,123,730.20
+  Routes solved  : 60
+
+  ── Upgrades & Rerouting ──────────────────────────────
+  Total upgrade delta cost : 0.00
+  Rerouting opportunities  : 0
+  Potential annual savings : 0.00
+══════════════════════════════════════════════════════════════════════
+
+  ✓ Full pipeline completed in 3.9s
+  ✓ Outputs saved to: /Users/harshithkt/Desktop/Dataport-IEEE/Centralization of Pharmaceutical Warehouses An Integrated Simulation and Optimization Approach/pipeline_outputs
+
+──────────────────────────────────────────────────────────────────────
+  Step 8: Launching Plotly Dash Dashboard on http://0.0.0.0:8050
+──────────────────────────────────────────────────────────────────────
+[Dashboard] Loading workbooks …
+[Dashboard] Computing risk scores …
+[Dashboard] Running Monte Carlo …
+[Dashboard] Training ML model …
+[Dashboard] Running LP optimizer …
+[Dashboard] Loading upgrader and rerouting plans …
+[Dashboard] Building folium map …
+[Dashboard] Ready.
+
+  Open in browser → http://localhost:8050
+  Press Ctrl+C to stop.
+
+Dash is running on http://0.0.0.0:8050/
+
+ * Serving Flask app 'dashboard'
+ * Debug mode: off
+Address already in use
+Port 8050 is in use by another program. Either identify and stop that program, or start the server with a different port.

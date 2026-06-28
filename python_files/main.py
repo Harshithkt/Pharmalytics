@@ -118,7 +118,8 @@ def step3_simulate(bundles: dict) -> tuple:
 
 def step4_ml(bundles: dict) -> tuple:
     from ml_model import build_feature_matrix, train_model, predict
-    _step(4, "XGBoost Bottleneck Predictor")
+    import pandas as pd
+    _step(4, "ML Bottleneck Predictor (XGBoost vs Random Forest)")
     t0 = time.time()
     features    = build_feature_matrix(bundles)
     model, metrics = train_model(features)
@@ -126,17 +127,22 @@ def step4_ml(bundles: dict) -> tuple:
     print(f"  Training complete in {time.time()-t0:.2f}s")
     print(f"  Samples  : {metrics['n_samples']}")
     print(f"  Features : {metrics['n_features']} → {metrics['feature_cols']}")
-    print(f"  CV ROC-AUC  : {metrics['cv_roc_auc_mean']} ± {metrics['cv_roc_auc_std']}")
-    print(f"  In-sample AUC: {metrics['insample_roc_auc']}")
-    print("\n  Feature importances:")
-    for feat, imp in metrics["feature_importances"].items():
+    
+    try:
+        comp_df = pd.read_csv("pipeline_outputs/ml_metrics_comparison.csv")
+        print("\n  5-Fold CV Model Comparison:")
+        print(comp_df.to_string(index=False))
+    except Exception:
+        pass
+        
+    print(f"\n  Best Model Selected : {metrics.get('best_model', 'N/A')}")
+    
+    print("\n  Feature importances (Best Model):")
+    best_imp = metrics.get("importances_dict", {}).get(metrics.get("best_model"), {})
+    for feat, imp in best_imp.items():
         bar = "█" * int(imp * 40)
         print(f"    {feat:35s} {bar} {imp:.4f}")
-    cr = metrics.get("classification_report", {})
-    if "1" in cr:
-        print(f"\n  High-risk class precision : {cr['1'].get('precision', 0):.3f}")
-        print(f"  High-risk class recall    : {cr['1'].get('recall', 0):.3f}")
-        print(f"  High-risk class F1        : {cr['1'].get('f1-score', 0):.3f}")
+
     _save(predictions, "ml_predictions.csv")
     return model, predictions, metrics
 
@@ -220,11 +226,10 @@ def print_insight_report(
     print(f"  Worst-case P99 shortage       : {sim_summary['worst_p99_shortage']:,.0f} units")
 
     print("\n  ── ML Model ──────────────────────────────────────────")
-    print(f"  CV ROC-AUC     : {ml_metrics.get('cv_roc_auc_mean','N/A')} ± "
-          f"{ml_metrics.get('cv_roc_auc_std','N/A')}")
-    print(f"  In-sample AUC  : {ml_metrics.get('insample_roc_auc','N/A')}")
-    top_feat = next(iter(ml_metrics.get("feature_importances", {})), "N/A")
-    print(f"  Top feature    : {top_feat}")
+    print(f"  Best Model Selected: {ml_metrics.get('best_model','N/A')}")
+    best_imp = ml_metrics.get("importances_dict", {}).get(ml_metrics.get("best_model"), {})
+    top_feat = next(iter(best_imp), "N/A")
+    print(f"  Top feature        : {top_feat}")
 
     print("\n  ── LP Optimizer ──────────────────────────────────────")
     print(f"  Status         : {opt_report.get('status','N/A')}")
